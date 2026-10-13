@@ -1,0 +1,11 @@
+node_modules
+.next
+out
+.turbo
+npm-debug.log*
+.env
+.env.*
+!.env.example
+*.tsbuildinfo
+.eslintcache
+.git

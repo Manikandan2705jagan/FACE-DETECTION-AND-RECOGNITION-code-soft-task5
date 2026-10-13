@@ -1,0 +1,45 @@
+# =============================================================================
+# JARVAS backend — GPU image (CUDA) for higher-throughput inference.
+#
+#   docker build -f infra/backend.Dockerfile.gpu -t jarvas-backend-gpu backend
+#
+# Requires the NVIDIA Container Toolkit on the host and `--gpus all` at run time.
+# Use CPUExecutionProvider or CUDAExecutionProvider via FACE_PROVIDERS.
+# =============================================================================
+FROM nvidia/cuda:12.4.1-cudnn-runtime-ubuntu22.04 AS base
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        python3.11 python3.11-venv python3-pip \
+        build-essential libglib2.0-0 libgl1 curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && ln -sf /usr/bin/python3.11 /usr/local/bin/python \
+    && ln -sf /usr/bin/python3.11 /usr/local/bin/python3
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN python -m pip install --upgrade pip && \
+    grep -v '^insightface' requirements.txt | grep -v '^onnxruntime' > requirements-gpu.txt && \
+    python -m pip install -r requirements-gpu.txt
+
+# GPU-tuned inference stack.
+RUN python -m pip install onnxruntime-gpu==1.20.1 || python -m pip install onnxruntime==1.20.1
+RUN python -m pip install insightface==0.7.3 || echo "insightface not installed; mock engine will be used"
+
+COPY . .
+RUN mkdir -p /models /data
+
+ENV FACE_PROVIDERS=CUDAExecutionProvider
+
+EXPOSE 8000
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=5 \
+    CMD curl -fsS http://localhost:8000/api/v1/health/live || exit 1
+
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

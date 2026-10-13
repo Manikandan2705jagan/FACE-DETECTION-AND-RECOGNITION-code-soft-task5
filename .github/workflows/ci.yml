@@ -1,0 +1,86 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend (pytest)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          # insightface needs a compiler + downloads weights; tests use the
+          # deterministic mock engine, so it is excluded from CI installs.
+          grep -v '^insightface' requirements.txt > requirements-ci.txt
+          pip install -r requirements-ci.txt
+
+      - name: Run test suite
+        env:
+          JARVAS_ENV: test
+          DATABASE_URL: ""
+          STORAGE_BACKEND: local
+          ALLOW_MOCK_FACE_ENGINE: "true"
+          JWT_SECRET: ci-test-secret-key-0123456789abcdef0123456789
+          BOOTSTRAP_ADMIN_EMAIL: admin@jarvas.dev
+          BOOTSTRAP_ADMIN_PASSWORD: ci-test-password
+        run: pytest -q --maxfail=1
+
+  frontend:
+    name: Frontend (typecheck · lint · build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        env:
+          NEXT_PUBLIC_API_BASE_URL: http://localhost:8080
+        run: npm run build
+
+  compose:
+    name: Validate compose
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: docker compose config
+        env:
+          JWT_SECRET: ci-validation-secret-0123456789abcdef
+          BOOTSTRAP_ADMIN_PASSWORD: ci-validation-password
+        run: docker compose -f infra/docker-compose.yml config >/dev/null

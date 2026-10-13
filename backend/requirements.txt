@@ -1,0 +1,45 @@
+# JARVAS backend — Python dependencies
+# Core web
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+python-multipart==0.0.20
+pydantic==2.10.4
+pydantic-settings==2.7.0
+email-validator==2.2.0
+
+# Database
+sqlalchemy==2.0.36
+psycopg[binary]==3.2.3
+alembic==1.14.0
+pgvector==0.3.6
+
+# Auth / security
+python-jose[cryptography]==3.3.0
+bcrypt==4.2.1
+cryptography==44.0.0
+pyjwt==2.10.1
+
+# Caching / queue
+redis==5.2.1
+celery==5.4.0
+
+# Storage + imaging
+boto3==1.35.90
+Pillow==11.0.0
+numpy==2.2.1
+
+# AI / inference
+onnxruntime==1.20.1
+# insightface is optional; the engine degrades to a deterministic mock if absent.
+insightface==0.7.3
+opencv-python-headless==4.10.0.84
+
+# Utils
+httpx==0.28.1
+python-dotenv==1.0.1
+tenacity==9.0.0
+
+# Testing
+pytest==8.3.4
+pytest-asyncio==0.25.0
+pytest-cov==6.0.0

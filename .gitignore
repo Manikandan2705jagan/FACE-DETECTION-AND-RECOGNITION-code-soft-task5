@@ -1,0 +1,43 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.venv-test/
+*.sqlite
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+htmlcov/
+.coverage
+coverage.xml
+
+# ---- Node / Next.js ----
+node_modules/
+.next/
+out/
+.turbo/
+*.tsbuildinfo
+.eslintcache
+
+# ---- Env & secrets ----
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# ---- Data / models / storage ----
+*.sqlite3
+data/
+backend/data/
+models/
+backend/models/
+.storage/
+
+# ---- OS / editors ----
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.log
